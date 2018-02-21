@@ -1,0 +1,143 @@
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.Stack;
+
+/**
+ * This is the driver class that deals with generic tree traversal
+ * algorithms.
+ * 
+ * @author MWilson164
+ * @version 1.0.0
+ */
+public class TreeTraversals {
+	/**
+	 * Kicks off the entire program.
+	 *  
+	 * @param args The arguments that have been passed in through 
+	 * 				the command line, if any.
+	 */
+	public static void main(final String[] args) {
+		BinarySearchTree random = makeRandomTree();
+		System.out.println("Now printing pre order:");
+		preOrderTraversal(random.getRoot());
+		
+		System.out.println("\n\nNow printing in order:");
+		inOrderTraversal(random.getRoot());
+		
+		System.out.println("\n\nNow printing post order:");
+		postOrderTraversal(random.getRoot());
+		
+		System.out.println("\n\nNow printing by level order:");
+		levelOrderOptimized(random.getRoot());
+	}
+	
+	/**
+	 * Method that prints out the contents of a tree in zig zag order 
+	 * 
+	 * @param root The root of the tree to iterate through.
+	 */
+	public static void zigZagOrder(BinaryNode root) {
+		Stack<BinaryNode> stack1 = new Stack<>();
+		Stack<BinaryNode> stack2 = new Stack<>();
+		while(root != null) {
+			
+		}
+	}
+	
+	/** 
+	 * Prints the contents of a binary tree by level in O(n).
+	 * Null represents the end of a level
+	 * 
+	 * @param root The root of the tree to iterate through.
+	 */
+	public static void levelOrderOptimized(BinaryNode root) {
+		Queue<BinaryNode> currentLevel = new LinkedList<>();
+		
+		// add the current node the queue 
+		currentLevel.add(root);
+		
+		// keep going until we have finished looking at all of the levels on the tree
+		while(!currentLevel.isEmpty()) {
+			BinaryNode temp = currentLevel.remove();
+			if(temp != null) {
+				// print the node 
+				System.out.print(temp.getData() + " ");
+				
+				// add the left and the right values to the queue 
+				BinaryNode left = temp.getLeft(); BinaryNode right = temp.getRight();
+				if(left != null) currentLevel.add(left);
+				if(right != null) currentLevel.add(right);
+				
+				// check the next node in the queue 
+				temp = currentLevel.peek();
+				
+				// we finished the current level, so mark the next level
+				if(temp == null) {
+					currentLevel.add(null);
+				}
+			}
+		}
+	}
+	
+	/** 
+	 * Method that runs through a pre order traversal of the given tree.
+	 * 
+	 * @param root The root of the tree to look through.
+	 */
+	public static void preOrderTraversal(BinaryNode root) {
+		if(root != null) {
+			System.out.print(root.getData() + " ");
+			preOrderTraversal(root.getLeft());
+			preOrderTraversal(root.getRight());
+		}
+	}
+	
+	/**
+	 * Method that runs through the in order traversal of the given tree.
+	 * 
+	 * @param root The root of the tree to look through.
+	 */
+	public static void inOrderTraversal(BinaryNode root) {
+		if(root != null) {
+			inOrderTraversal(root.getLeft());
+			System.out.print(root.getData() + " ");
+			inOrderTraversal(root.getRight());
+		}
+	}
+	
+	/**
+	 * Method that runs through the post order traversal of the given tree.
+	 * 
+	 * @param root The root of the tree to look through.
+	 */
+	public static void postOrderTraversal(BinaryNode root) {
+		if(root != null) {
+			postOrderTraversal(root.getLeft());
+			postOrderTraversal(root.getRight());
+			System.out.print(root.getData() + " ");
+		}
+	}
+	
+	/**  
+	 * Method that generates a random binary search tree.
+	 * 
+	 * @return The root of the generated tree.
+	 */
+	private static BinarySearchTree makeRandomTree() {
+		// Choose a random number of nodes to add to the tree from the user 
+		Scanner input = new Scanner(System.in);
+		System.out.println("How any nodes would you like the tree to have?");
+		int nodeCount = input.nextInt();
+		Random rand = new Random();
+		BinarySearchTree returnThisTree = new BinarySearchTree();
+		
+		// Start adding the nodes to the tree
+		for(int i = 0; i < nodeCount; i++) {
+			returnThisTree.add(rand.nextInt(25));
+		}
+		
+		return returnThisTree;
+	}
+}

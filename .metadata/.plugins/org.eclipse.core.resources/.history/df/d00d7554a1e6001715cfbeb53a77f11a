@@ -1,0 +1,212 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
+
+/**
+ * This class will compare the differences and similarities between two different files 
+ * 
+ * @author MWilson164
+ * @version 1.0.0
+ *
+ */
+public class CompareRator {
+	/** Splits by tab */
+	private final String SPLIT_BY_TAB = "\\t+";
+	
+	/** Reference to the first file */
+	private File firstFile;
+	
+	/** Reference to the second file */
+	private File secondFile;
+	
+	/** My first scanner */
+	private Scanner firstScan;
+	
+	/** My second scanner */
+	private Scanner secondScan;
+	
+	/** Keeps track of the headers at the top of the files */
+	private String[] headers;
+	
+	/** Keeps track of the differences by column and row */
+	private Set<Cell> differentCells;
+	
+	/** The string builder object to be used in generating strings in a row */
+	private StringBuilder myString;
+	
+	private StringBuilder myString2;
+
+	/**
+	 * Creates a CompareRator object used for comparing two files
+	 * 
+	 * @param firstFile A file to parse through
+	 * @param secondFile A file to parse through
+	 * @throws FileNotFoundException 
+	 */
+	public CompareRator(final File firstFile, final File secondFile) throws FileNotFoundException {
+		this.firstFile = firstFile;
+		this.secondFile = secondFile;
+		this.firstScan = new Scanner(firstFile);
+		this.secondScan = new Scanner(secondFile);
+		this.differentCells = new HashSet<Cell>();
+		myString = new StringBuilder();
+		myString2 = new StringBuilder();
+	}
+	
+	/**
+	 * This algorithm will traverse through the contents of the file and 
+	 * appropriately designate which fields and values are different and 
+	 * which ones are the same.
+	 * 
+	 * @throws FileNotFoundException 
+	 */
+	public void startComparison() throws FileNotFoundException {
+		final int cols = findMaxCol();
+		compareSimilarities();
+	}
+	
+	/** 
+	 * Finds the length of the file with the greatest number of columns 
+	 * and returns it.
+	 * 
+	 * @return The greatest number of columns.
+	 * @throws FileNotFoundException 
+	 */
+	private int findMaxCol() throws FileNotFoundException {
+		int firstLength; int secondLength = firstLength = 0;
+		System.out.println("Scanning the total column count of the first file...");
+		firstLength = findMaxCol(firstScan, firstLength);
+		
+		System.out.println("Scan of the first file complete!\n"
+				+ "\nScanning the total column count of the second file...");
+		
+		secondLength = findMaxCol(secondScan, secondLength);
+		
+		String resolve;
+		
+		if(firstLength < secondLength) {
+			secondScan = new Scanner(secondFile);
+			resolve = "second";
+		} else {
+			firstScan = new Scanner(firstFile);
+			resolve = "first";
+		}
+		
+		String[] temp;
+		// populates the headers
+		if(resolve.equals("first")) {
+			temp = firstScan.nextLine().split("\t");
+			headers = new String[firstLength];
+			for(int i = 0; i < temp.length; i++) {
+				headers[i] = temp[i] == null? "NONE":temp[i];
+			}
+		} else {
+			temp = secondScan.nextLine().split("\t");
+			headers = new String[secondLength];
+			for(int i = 0; i < temp.length; i++) {
+				headers[i] = temp[i] == null? "NONE":temp[i];
+			}
+		}
+		
+		System.out.println("Scan of the second file complete!\n");
+		return firstLength > secondLength ? firstLength : secondLength;
+	}
+	
+	/**
+	 * Private Helper function to find the max column.
+	 * 
+	 * @param myScan The scanner to use.
+	 * @param length The variable to manipulate.
+	 * @return The maximum column count
+	 */
+	private int findMaxCol(final Scanner myScan, int length) {
+		int tempLength;
+		while(secondScan.hasNextLine()) {
+			String s = secondScan.nextLine();
+			int i =0;
+			tempLength = 0;
+			while(i < s.length()) {
+				if(Integer.toHexString((int)s.charAt(i)).equals("9")) {
+					int k = 0;
+					while(i < s.length() && Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++; k++;
+					}
+					tempLength += k/2;
+					i++;
+				}
+				else {
+					while(i < s.length() && !Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++;
+					}
+					tempLength++;
+					i++;
+				}
+			}
+			length = length < tempLength ? tempLength: length;
+		}
+		return length;
+	}
+	
+	/**
+	 * Function that populates the similarities matrix.
+	 * @throws FileNotFoundException 
+	 */
+	public void compareSimilarities() throws FileNotFoundException {
+		firstScan = new Scanner(firstFile);
+		secondScan = new Scanner(secondFile);
+		int row = 0; int col = 0;
+		int s1Col; int s2Col;
+		while(firstScan.hasNextLine() && secondScan.hasNextLine()) {
+			String s = firstScan.nextLine();
+			String s2 = secondScan.nextLine();
+			int i = 0; int j = 0;
+			col= 0;
+			while(i < s.length() && j < s2.length()) {
+				myString = new StringBuilder();
+				myString2 = new StringBuilder();
+				if(Integer.toHexString((int)s.charAt(i)).equals("9")) {
+					int k = 0;
+					while(i < s.length() && Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++; k++;
+					}
+				} else {
+					while(i < s.length() && !Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						myString.append(s.charAt(i)); i++;
+					}
+				}
+				if(Integer.toHexString((int)s2.charAt(j)).equals("9")) {
+					int k = 0;
+					while(j < s2.length() && Integer.toHexString((int)s2.charAt(j)).equals("9")) {
+						j++; k++;
+					}
+				} else {
+					while(j < s2.length() && !Integer.toHexString((int)s2.charAt(j)).equals("9")) {
+						myString2.append(s2.charAt(j)); j++;
+					}
+				}
+				if(!myString.toString().equals(myString2.toString())) {
+					System.out.println("Adding " + myString.toString() + " and " + myString2.toString()
+					+ " to " + headers[col]);
+					differentCells.add(new Cell(headers[col], myString.toString(), myString2.toString()));
+				}
+ 				col++;
+			}
+			row++;
+		}
+	}
+	
+	/** Cell class that contains data on a difference location */
+	private class Cell {
+		String columnName;
+		String firstData;
+		String secondData;
+		
+		public Cell(final String column, final String first, final String second) {
+			this.columnName = column;
+			this.firstData = first;
+			this.secondData = second;
+		}
+	}
+}

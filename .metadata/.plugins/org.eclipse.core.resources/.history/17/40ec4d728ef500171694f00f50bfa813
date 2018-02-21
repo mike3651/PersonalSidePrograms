@@ -1,0 +1,657 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
+
+/**
+ * This class will compare the differences and similarities between two different files 
+ * 
+ * @author MWilson164
+ * @version 1.2.3
+ *
+ */
+public class CompareRator {
+	/** Dates with the proper values to them*/
+	private String[] DATES = {
+		"JAN",
+		"FEB",
+		"MAR", 
+		"APR",
+		"MAY",
+		"JUN",
+		"JUL",
+		"AUG",
+		"OCT", 
+		"NOV",
+		"DEC"
+	};
+	
+	/** THE COLUMNS THAT WE CAN IGNORE */
+	private Set<String> IGNORE_THESE;
+	
+	/** POSSIBLE KEYS **/
+	private Set<String> KEYS;
+	
+	/** KEY FOR THIS COMPARERATOR **/
+	private String MY_KEY;
+	
+	/** Keeps track of the number of columns that we have **/
+	private int cols;
+	
+	/** Keeps track of the different rows */
+	private int differentRows;
+	
+	/** Keeps track of the rows that were read */
+	private int rowCount;
+	
+	/** Reference to the first file */
+	private File firstFile;
+	
+	/** Reference to the second file */
+	private File secondFile;
+	
+	/** My first scanner */
+	private Scanner firstScan;
+	
+	/** My second scanner */
+	private Scanner secondScan;
+	
+	/** Scanner for the user input */
+	private Scanner user;
+	
+	/** Keeps track of the headers at the top of the files */
+	private String[] headers;
+	
+	/** Keeps track of the differences by column and row */
+	private Set<Cell> differentCells;
+	
+	/** Maps all of the cells according to their respective columns */
+	private HashMap<String, List<Cell>> myMap;
+	
+	/** Keeps a set of pseudoCells */
+	private Set<pseudoCell> theCells;
+	
+	/** Set of second Keys */
+	private Set<String> secondKeys;
+	
+	/** File to write to */
+	private String fileToWriteTo;
+	
+	/** Keeps track of the rows that have been analyzed */
+	private int rowsCounted;
+	
+	private int totalConflicts;
+	
+	/** Set of possible dates */
+	private Set<String> possibleDates;
+	
+	// INITIALIZE THE FINAL VALUES THAT WE DON'T NEED TO MODIFY
+	{
+		myMap = new HashMap<>();
+		theCells = new HashSet<>();
+		secondKeys = new HashSet<>();
+		KEYS = new HashSet<>();
+		totalConflicts = 0;
+		possibleDates.add("ORDERED");
+		possibleDates.add("DUE");
+		possibleDates.add("INSTALLED");
+		possibleDates.add("DECOMMISSION");
+		possibleDates.add("IN_SERVICE");
+	}
+
+	/**
+	 * Creates a CompareRator object used for comparing two files
+	 * 
+	 * @param firstFile A file to parse through
+	 * @param secondFile A file to parse through
+	 * @throws FileNotFoundException 
+	 */
+	public CompareRator(final File firstFile, final File secondFile, 
+			final String toWrite, final Set<String> columns, final String theKey) 
+			throws FileNotFoundException {
+		this.firstFile = firstFile;
+		this.fileToWriteTo = toWrite;
+		this.secondFile = secondFile;
+		this.firstScan = new Scanner(firstFile);
+		this.secondScan = new Scanner(secondFile);
+		this.user = new Scanner(System.in);
+		this.differentCells = new HashSet<Cell>();;
+		IGNORE_THESE = columns;
+		rowsCounted = 0;
+		MY_KEY = theKey;
+		String[] tempKeys = theKey.split(",");
+		for(String s : tempKeys) {
+			KEYS.add(s);
+		}
+	}
+	
+	/**
+	 * This algorithm will traverse through the contents of the file and 
+	 * appropriately designate which fields and values are different and 
+	 * which ones are the same.
+	 * 
+	 * @throws FileNotFoundException 
+	 * @throws InterruptedException 
+	 * @throws UnsupportedEncodingException 
+	 */
+	public void startComparison() throws FileNotFoundException, InterruptedException, UnsupportedEncodingException {
+		cols = findMaxCol();
+		checkIDs();
+		System.out.println("Finished finding the similarities and differences!");
+		System.out.println("Writing the results to a file");
+		writeToFile();
+	
+		System.out.println("\n");
+	}
+	
+	private void checkIDs() throws FileNotFoundException, InterruptedException {
+		firstScan = new Scanner(firstFile);
+		secondScan = new Scanner(secondFile);
+//		System.out.println("Finished finding the number of columns to process..."
+//				+ "\nHow many rows would you like to analyze?");
+//		rowCount = Integer.parseInt(user.next());
+		Map<String, List<pseudoCell>> myCells = new HashMap<>();
+		Map<String, List<pseudoCell>> myCells2 = new HashMap<>();
+		
+		myCells = hashFile(firstFile);
+		System.out.println("Finished proccessing all of the first file set.\n\nNow working on the second!");
+		myCells2 = hashFile(secondFile);
+		
+		
+		// CHECKS FOR THE DIFFERENCES WITH THE SECOND SET OF DATA 
+		
+		int conflicts = 0;
+		int rowConflicts = 0;
+		pseudoCell singleCell;
+		pseudoCell otherSingleCell;
+		System.out.println("looking at " + myCells.size() + " rows"
+				+ "\nWith a total of " + myCells.size() * cols + " elements\n");
+		int row = 0;
+		for(String s : myCells.keySet()) {
+			//System.out.println("Analyzing rows with ID: " + s);
+			boolean conflict = false;
+			if(myCells2.get(s) == null) continue;
+		//System.out.println("Comparing " + s + " to " + s2);
+		// dealing with two rows that have the same key
+			//System.out.println("Comparing " + s + " to " + s2);
+			for(int i = 0; i < Math.min(myCells.get(s).size(), myCells2.get(s).size()); i++) {
+				singleCell = myCells.get(s).get(i);
+				otherSingleCell = myCells2.get(s).get(i);
+				if(IGNORE_THESE.contains(singleCell.column) || IGNORE_THESE.contains(otherSingleCell.column)) { 
+					continue;
+				}
+				if(!singleCell.value.equals(otherSingleCell.value)
+						&& singleCell.column.equals(otherSingleCell.column)) {
+
+							System.out.println("Comparing " + singleCell.value + " at " + singleCell.column +  " to " 
+						+ otherSingleCell.value + " at " + otherSingleCell.column);
+					conflict = true;
+					differentCells.add(new Cell(singleCell.column, singleCell.value, otherSingleCell.value, 
+					s, this.firstFile.getName(), 
+					this.secondFile.getName(), singleCell.row, row));
+					conflicts++;
+					totalConflicts++;
+				}
+			}
+			if(++row%10000==0) {
+				System.out.println("Dealing with row: " + row);
+				System.out.println("row conflicts so far: " + rowConflicts);
+				System.out.println("total conflicts so far: " + conflicts);
+			}
+			if(conflict) rowConflicts++;
+
+		}
+		System.out.println("row conflicts: " + rowConflicts);
+		System.out.println("total conflicts: " + conflicts);
+	}
+	
+	/** Private function that will analyze a file and return an appropriate hashmap of the data 
+	 * 
+	 * @param f The file to scan through 
+	 * @return A mapping of keys to data information per record 
+	 * @throws FileNotFoundException 
+	 */
+	@SuppressWarnings("resource")
+	private Map<String, List<pseudoCell>> hashFile(final File f) throws FileNotFoundException {
+		Scanner tempScan = new Scanner(f);
+		
+		int row = 0; int col = 0; int keysViewed = 0;
+		// POPULATES THE HASHTABLE OF PSEUDOCELLS
+		StringBuilder myString = new StringBuilder();
+		Map<String, List<pseudoCell>> myCells = new HashMap<>();
+		while(tempScan.hasNextLine()) {
+			String s = tempScan.nextLine();
+			int i = 0; 
+			col= 0;
+			String KEY = "";
+			boolean keySet = false;
+			keysViewed = 0;
+			if(row > 0) {
+				List<pseudoCell> rowRecord = new ArrayList<>();
+				while(i < s.length() && col < headers.length) {
+					// THERE'S NOTHING MORE TO LOOK AT
+					if(headers[col] == null) break;
+					myString = new StringBuilder();
+					if(Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						myString.append("");
+						i+=1;
+					} else {
+						while(i < s.length() && !Integer.toHexString((int)s.charAt(i)).equals("9")) {
+							myString.append(s.charAt(i)); i++;
+						}i++;
+						
+
+						if(!IGNORE_THESE.contains(headers[col])) {
+							// SEE IF WE NEED TO SET THE KEY
+							if(!keySet) {
+								KEY += myString.toString().replaceAll("\\s+", "");
+								if(KEYS.contains(headers[col])) {
+									keysViewed++;
+									KEY += " " + headers[col]; 
+								}
+								if(keysViewed >= KEYS.size()) {
+									keySet = true;
+								}
+							}
+							String regex; String temp = myString.toString();
+							if(headers[col].contains("DATE") || possibleDates.contains(headers[col])) {
+								regex = temp.contains("-") ? "-" : "/";
+								//System.out.println("Date: " + temp);
+								if(temp.length() > 5)temp = convertDate(temp.split(" ")[0], regex);
+							} 
+							temp.replaceAll("\\s+", "");
+							rowRecord.add(new pseudoCell(temp, f.getName(), headers[col], row));
+						}
+					}
+					col++;
+				}
+				if(!myCells.containsKey(KEY)) {
+					myCells.put(KEY, rowRecord); 
+				}
+			}
+
+			if(++row%50000 == 0) System.out.println("Finished processing row: " + row); 
+			rowsCounted++;
+			if (row == rowCount) break;
+		}
+		//System.out.println("The number of keys that have been added is: " + myCells.keySet().size());
+		return myCells;
+	}
+	
+	/**
+	 * Converts a date into a form that I find easy 
+	 * 
+	 * @param date The date that we are to transform
+	 * @return A string representation of the new date conversion
+	 */
+	private String convertDate(final String date, final String regex) {
+		String[] temp = date.split(regex);
+		// NOT DEALING WITH AN ACTUAL DATE
+		if(temp.length < 3) return date;
+		//System.out.println("looking at date: " + date);
+		try {
+			if((Integer)Integer.parseInt(temp[1]) instanceof Integer)
+				return temp[0] + temp[1] + temp[2];
+		} catch(Exception e) {
+			// dealing with the string
+			int value = 0;
+			if(regex.equals("-"))value = java.util.Arrays.asList(DATES).indexOf(temp[1]);
+			String tempString ="";
+			if(value < 10) tempString+="0";
+			return tempString + value + temp[0] + temp[2];
+		}
+		// FORMATS
+		// first: MONTH:int - DAY:int - YEAR:int
+		// second: DAY:int - MONTH:String - YEAR:int
+		return date;
+	}
+	
+	/**
+	 * Private partial cell class to help store the first data elements
+	 * 
+	 * @author MWilson164
+	 *
+	 */
+	private class pseudoCell {
+		String value; String fileName; String column; int row; Set<String> conflictsWith;
+		
+		public pseudoCell(final String value, final String fileName, final String column, final int row) {
+			this.value = value; this.fileName = fileName; this.column = column; this.row = row;
+			conflictsWith = new HashSet<>();
+		}
+	}
+	
+	private void writeToFile() throws FileNotFoundException, UnsupportedEncodingException {
+		System.out.println("Writing the data to " + fileToWriteTo);
+		PrintWriter writer = new PrintWriter(fileToWriteTo, "UTF-8");
+		writer.println("MICHAEl'S ANALYZER\n@TMOBILE\n\nProcessed a total of " + rowsCounted + " rows.");
+		for(Cell c : differentCells) {
+			if (myMap.get(c.getName()) == null) 
+				myMap.put(c.getName(), new LinkedList<Cell>());
+			myMap.get(c.getName()).add(c);
+		}
+		
+		int differenceSum = 0;
+		int rowSum = 0;
+		
+		rowSum = differentCells.size();
+		System.out.println("differing rows: " + rowSum);
+		writer.println("PRIMARY KEY: " + MY_KEY);
+		
+		writer.println("There are a total of " + differenceSum + " differences.");
+		writer.println("There are a total of " + rowSum + " rows with differences.");
+		writer.println("\nRow difference counts per column:");
+		for(String s: myMap.keySet()) {
+			List<Cell> c = myMap.get(s);
+			writer.println("\tThere are a total of " + c.size() +  " differences in column " + s);
+		}
+		
+		Map<Integer, Map<String, String>> EAI_ROWS_TO_COLS = new HashMap<>();
+		
+		for(String s: myMap.keySet()) {
+			List<Cell> c = myMap.get(s);
+			for(Cell cell: c) {
+				if(EAI_ROWS_TO_COLS.get(cell.firstRow) == null) 
+					EAI_ROWS_TO_COLS.put(cell.firstRow, new HashMap<String, String>());
+				EAI_ROWS_TO_COLS.get(cell.firstRow).put(s, cell.firstData);
+			}
+		}
+		
+		
+		// WRITES OUT THE ROWS AND RESPECTIVE COLUMNS THAT ARE OFF 
+		for(Integer cell : EAI_ROWS_TO_COLS.keySet()) {
+			Map<String, Map<Integer, String>> tempCells = new HashMap<>();
+			writer.println(this.firstFile.getName().replaceAll(".txt", "") 
+					+ " Row: " + cell + "\n\tColumns that have a mismatch and the EAI values:");
+			Set<String> toIterate = EAI_ROWS_TO_COLS.get(cell).keySet();
+			writer.print("\t\t[\n\t\t");
+			for(String col : toIterate) {
+				writer.print("\t[Column: " + col + "\tValue: " + EAI_ROWS_TO_COLS.get(cell).get(col) + "]\n\t\t");
+			}
+			writer.println("]\n\n\tRows and values from " + this.secondFile.getName().replaceAll(".txt", "") +" that cause these differences: ");
+			for(Cell c : differentCells) {
+				if(c.firstRow == cell) {
+					if(tempCells.get(c.columnName) == null) {
+						tempCells.put(c.columnName, new HashMap<Integer, String>());
+					}
+					tempCells.get(c.columnName).put(c.secondRow, c.secondData);
+				}
+			}
+		
+			for(String s : tempCells.keySet()) {
+				writer.print("\t\t" + s + ": [\n\t\t");
+				for(int i : tempCells.get(s).keySet()) {
+					String tempValue = tempCells.get(s).get(i);
+					writer.print("\t[Row: " + i + "\tValue:" + tempValue + "]\n\t\t");
+				}
+				writer.println("]\n");
+			}
+		}
+		
+		// DEBUG INFO ON THE KEYS
+		writer.close();
+	}
+	
+	/** 
+	 * Finds the length of the file with the greatest number of columns 
+	 * and returns it.
+	 * 
+	 * @return The greatest number of columns.
+	 * @throws FileNotFoundException 
+	 */
+	private int findMaxCol() throws FileNotFoundException {
+		int firstLength; int secondLength = firstLength = 0;
+		System.out.println("Scanning the total column count of the first file...");
+		firstLength = findMaxCol(firstScan, firstLength);
+		
+		System.out.println("Scan of the first file complete!\n"
+				+ "\nScanning the total column count of the second file...");
+		
+		secondLength = findMaxCol(secondScan, secondLength);
+		System.out.println("Scan of the second file complete!\n");
+		
+		String resolve;
+		
+		if(firstLength < secondLength) {
+			secondScan = new Scanner(secondFile);
+			resolve = "second";
+		} else {
+			firstScan = new Scanner(firstFile);
+			resolve = "first";
+		}
+		
+		String[] temp;
+		// populates the headers
+		if(resolve.equals("first")) {
+			temp = firstScan.nextLine().split("\t");
+			headers = new String[firstLength];
+			for(int i = 0; i < temp.length; i++) {
+				headers[i] = temp[i] == null? "NONE":temp[i];
+			}
+		} else {
+			temp = secondScan.nextLine().split("\t");
+			headers = new String[secondLength];
+			for(int i = 0; i < temp.length; i++) {
+				headers[i] = temp[i] == null? "NONE":temp[i];
+			}
+		}
+		return firstLength > secondLength ? firstLength : secondLength;
+	}
+	
+	/**
+	 * Private Helper function to find the max column.
+	 * 
+	 * @param myScan The scanner to use.
+	 * @param length The variable to manipulate.
+	 * @return The maximum column count
+	 */
+	private int findMaxCol(final Scanner myScan, int length) {
+		int tempLength;
+		while(secondScan.hasNextLine()) {
+			String s = secondScan.nextLine();
+			int i =0;
+			tempLength = 0;
+			while(i < s.length()) {
+				if(Integer.toHexString((int)s.charAt(i)).equals("9")) {
+					int k = 0;
+					while(i < s.length() && Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++; k++;
+					}
+					tempLength += k/2;
+					i++;
+				}
+				else {
+					while(i < s.length() && !Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++;
+					}
+					tempLength++;
+					i++;
+				}
+			}
+			length = length < tempLength ? tempLength: length;
+		}
+		return length;
+	}
+	
+	/** Cell class that contains data on a difference location */
+	private class Cell{
+		private String columnName;
+		private String key;
+		private String firstData;
+		private String secondData;
+		private String firstFileName;
+		private String secondFileName;
+		private int firstRow;
+		private int secondRow;
+		
+		public Cell(final String column, final String first, final String second, final String key,
+				final String firstFile, final String secondFile, final int firstRow, final int secondRow) {
+			this.columnName = column;
+			this.firstData = first;
+			this.secondData = second;
+			this.key = key;
+			this.firstFileName = firstFile;
+			this.secondFileName = secondFile;
+			this.firstRow = firstRow;
+			this.secondRow = secondRow;
+		}
+		
+		/**
+		 * Gets the column name of this cell.
+		 * 
+		 * @return the column name to this cell.
+		 */
+		public String getName() {
+			return columnName;
+		}
+		
+		/**
+		 * Gets the firstData element of this cell.
+		 * 
+		 * @return this cell's first bit of data.
+		 */
+		public String getFirstData() {
+			return firstData;
+		}
+		
+		/**
+		 * Gets the secondData element of this cell.
+		 * 
+		 * @return this cell's second bit of data.
+		 */
+		public String getSecondData() {
+			return secondData;
+		}
+		
+		/** 
+		 * Gets the row where this cell was created.
+		 * 
+		 * @return the row of this cell.
+		 */
+		public String getKey() {
+			return key;
+		}
+		
+		/**
+		 * Overridden toString method for the cell class
+		 *
+		 * @return the String representation of this object
+		 */
+		@Override
+		public String toString() {
+			return "\n\tPrimary Key: " + this.key + "-" + this.columnName + "\n\t"
+					+ this.firstFileName + ": " + this.firstData + ", from row: " + this.firstRow + "\n\t"
+					+ this.secondFileName + ": " + this.secondData + ", from row: " + this.secondRow +  
+					"\n";
+		}	
+	}
+	
+	public class HybridCell {
+		String masterKey;
+		
+		public HybridCell(final String masterKey) {
+			this.masterKey = masterKey;
+		}
+	}
+}
+
+/** ORIGINAL PARSE FILE */
+//while(secondScan.hasNextLine()) {
+//keysViewed = 0;
+//String s2 = secondScan.nextLine();
+//int j = 0;
+//col= 0;
+//String KEY = "";
+//boolean keySet = false;
+//if(row > 0) {
+//	List<pseudoCell> rowRecord = new ArrayList<>();
+//	while(j < s2.length()  && col < headers.length) {
+//		myString2 = new StringBuilder();
+//		if(Integer.toHexString((int)s2.charAt(j)).equals("9")) {
+//			j+=2;
+//			myString2.append("");
+//		} else {
+//			while(j < s2.length() && !Integer.toHexString((int)s2.charAt(j)).equals("9")) {
+//				myString2.append(s2.charAt(j)); j++;
+//			}j++;
+////			if(i <= 1) {
+////				if(i == 0) {
+////					try {
+////						if((Integer)Integer.parseInt(myString2.toString()) instanceof Integer) continue;
+////					} catch(Exception e) {
+////						break;
+////					}
+////				}
+////				if(i == 1)KEY = myString2.toString(); 
+////			}
+//			//if(i>5 && !keySet) {/*System.out.println("ignoring this line");*/break;}
+//		}
+//		
+//		if(!IGNORE_THESE.contains(headers[col])) {
+//		
+//			// SEE IF WE NEED TO SET THE KEY
+//			if(!keySet) {
+//				KEY += myString2.toString().replaceAll("\\s+", "");
+//				if(KEYS.contains(headers[col])) {
+//					keysViewed++;
+//					KEY += " " + headers[col]; 
+//				}
+//				if(keysViewed >= KEYS.size()) {
+//					keySet = true;
+//				}
+//			}
+//			if(!IGNORE_THESE.contains(headers[col])) {
+//				//System.out.println("Adding cell");		
+//				rowRecord.add(new pseudoCell(myString2.toString(), secondFile.getName(), headers[col], row));
+//			}
+//			
+////			// SEARCH THE MAP FOR THE CELL CORRESPONDING TO THIS KEY AND COLUMN
+////			if(KEY != null && keySet) {
+////				if(!myCells.containsKey(KEY)) {
+////					// mark the difference
+////					//differentCells.add(new Cell(headers[col], "Not applicable", myString2.toString(), KEY, this.firstFile.getName(), 
+////							//this.secondFile.getName(), Integer.MIN_VALUE, row));
+////				} else {
+////					//System.out.println("The current key is: " + KEY);
+////					// GETS THE APPROPRIATE DATA BASED OFF OF THE CURRENT KEY
+////					for(pseudoCell cell: myCells.get(KEY)) {
+////						//System.out.println("Looking at column " + cell.column);
+////						if(cell.column != null && cell.column.equals(headers[col])) {
+////							// LOOKING AT A POTENTIAL MATCH
+////							if(cell.value.equals(myString2.toString())) continue;
+////							
+////							// FOUND A DIFFERENCE HERE, MARK IT
+////							else if(!IGNORE_THESE.contains(headers[col])) {
+////								//System.out.println("POTENTIAL DIFFERENCE: \n" + cell.value + " : " + myString2.toString());
+////								if(cell.value.length() >2 || 2< myString2.toString().length()) {
+////									cell.conflictsWith.add("At Column: " + headers[col] + "\n\tRow from second file: " + row);
+////									differentCells.add(new Cell(headers[col], cell.value, myString2.toString(), KEY, this.firstFile.getName(), 
+////											this.secondFile.getName(), cell.row, row));
+////								}
+////							}
+////
+////						}
+////						secondKeys.add(KEY);
+////					} 
+////				}
+////			}
+//			
+//		}
+//		col++;
+//	}
+//	if(!myCells2.containsKey(KEY)) myCells2.put(KEY, rowRecord); 
+//}
+//row++;rowsCounted++;
+//if(row%50000 == 0) System.out.println("Finished processing row: " + row); 
+//if (row == rowCount) break;
+//}
+

@@ -1,0 +1,134 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+import java.util.HashSet;
+
+/**
+ * The purpose of this class is to utilize the CompareRator objects functionality
+ * 
+ * @author MWilson164
+ * @version 1.0.0
+ */
+public class CompareClient {
+	
+	/**
+	 * Kicks off the whole program
+	 * 
+	 * @param args Any arguments that are passed in via the command line
+	 * @throws FileNotFoundException
+	 * @throws InterruptedException 
+	 * @throws UnsupportedEncodingException 
+	 */
+	public static void main(final String[] args) throws FileNotFoundException, InterruptedException, UnsupportedEncodingException {
+		// TEST THE SEGMENT FILES
+		CompareRator compareFiles;
+		System.out.println("Running EAI_GRANITE_SEGMENTS_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_SEGMENTS.txt"), 
+				new File("./src/files/Granite_VT_SEGMENTS.txt"), 
+				"EAI_GRANITE_SEGMENTS_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList("CIRC_INST_ID", "CIRC_PATH_INST_ID", "NEXT_CIRC_PATH_INST_ID", "COMMENTS", "A_SIDE_SITE_INST_ID", 
+						"A_SIDE_CARD_INST_ID", "A_SIDE_PORT_INST_ID", "Z_SIDE_SITE_INST_ID", "A_SIDE_EQ_INST_ID",
+						"Z_SIDE_PORT_INST_ID", "Z_SIDE_CARD_INST_ID", "LAST_MOD_BY", "LAST_MOD_TS", "LOAD_TIMESTAMP")), 
+				"CIRC_NAME,BANDWIDTH,STATUS,CATEGORY,VENDOR");
+		compareFiles.startComparison();
+		
+		System.out.println("Running EAI_GRANITE_SEGMENTS_ANALYSIS_WITHOUT_NBR");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_SEGMENTS.txt"), 
+				new File("./src/files/Granite_VT_SEGMENTS.txt"), 
+				"EAI_GRANITE_SEGMENTS_ANALYSIS_WITHOUT_NBR",
+				new HashSet<String>(Arrays.asList("CIRC_INST_ID", "CIRC_PATH_INST_ID", "NEXT_CIRC_PATH_INST_ID", "COMMENTS", "A_SIDE_SITE_INST_ID", 
+						"A_SIDE_CARD_INST_ID", "A_SIDE_PORT_INST_ID", "Z_SIDE_SITE_INST_ID", "A_SIDE_EQ_INST_ID",
+						"Z_SIDE_PORT_INST_ID", "Z_SIDE_CARD_INST_ID", "LAST_MOD_BY", "LAST_MOD_TS", "LOAD_TIMESTAMP", "NBR_CHANNELS")), 
+				"CIRC_NAME,BANDWIDTH,STATUS,CATEGORY,VENDOR");
+		compareFiles.startComparison();
+		
+		// TEST RELPATH_ELEMENTS
+		System.out.println("Running EAI_GRANITE_VT_TP_RELPATH_ELEMENTS_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_TP_RELPATH_ELEMENTS.txt"), 
+				new File("./src/files/GRANITE_VT_TP_RELPATH_ELEMENTS.txt"), 
+				"EAI_GRANITE_VT_TP_RELPATH_ELEMENTS_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList("CIRC_PATH_INST_ID","RELATED_PATH_INST_ID","SEQUENCE")),
+"PATH_NAME,TYPE,RELATION_TYPE,RELATED_PATHS,RELATED_PATH_TYPE,LEG_NAME,ELEMENT_NAME,SEGMENT_VENDOR,ELEMENT_CATEGORY,PORT_NAME");
+		compareFiles.startComparison();
+		
+		// ANALYZE GRANITE2NDW_DDS
+		System.out.println("Running EAI_GRANITE_VT_GRANITE2NDW_DDS_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_GRANITE2NDW_DDS.txt"), 
+				new File("./src/files/GRANITE_VT_GRANITE2NDW_DDS.txt"), 
+				"EAI_GRANITE_VT_GRANITE2NDW_DDS_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList()), "SITE_ID,VENDOR,SEGMENT_ID,BANDWIDTH");
+		compareFiles.startComparison();
+		
+		// ANALYZE PATH
+		System.out.println("Running EAI_GRANITE_VT_TP_PATH_ELEMENTS_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_TP_PATH_ELEMENTS.txt"), 
+				new File("./src/files/GRANITE_VT_TP_PATH_ELEMENTS.txt"), 
+				"EAI_GRANITE_VT_TP_PATH_ELEMENTS_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList("CIRC_PATH_INST_ID","SEQUENCE")), 
+				"PATH_NAME,TYPE,LEG_NAME,ELEMENT_NAME,SEGMENT_VENDOR,SEGMENT_A_SIDE,SEGMENT_Z_SIDE,SEGMENT_STATUS,ELEMENT_CATEGORY,PORT_NAME");
+		compareFiles.startComparison();
+		
+		// ANALYZE TRANSPORT DATA
+		System.out.println("Running EAI_GRANITE_VT_TRANSPORT_DATA_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_TRANSPORT_DATA.txt"), 
+				new File("./src/files/GRANITE_VT_TRANSPORT_DATA.txt"), 
+				"EAI_GRANITE_VT_TRANSPORT_DATA_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList()), "MKT,SITE,TRANS_2G,TRANS_3G");
+		compareFiles.startComparison();
+	
+		// ANALYZE SUPERPATH
+		System.out.println("Running EAI_VT_TP_SUPER_PATH_ELEMS_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_TP_SUPER_PATH_ELEMS.txt"), 
+				new File("./src/files/GRANITE_VT_TP_SUPER_PATH_ELEMS.txt"), 
+				"EAI_VT_TP_SUPER_PATH_ELEMS_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList("CIRC_PATH_INST_ID","PATH_INST_ID")),
+				"SUPER_PATH_NAME,TRUNK_GROUP,A_SIDE_SITE_ID,Z_SIDE_SITE_ID,RELATED_PATHS,REL_TYPE");
+		compareFiles.startComparison();
+		
+		// ANALYZE GRANITE2INSITE_CP
+		System.out.println("Running EAI_GRANITE_VT_GRANITE2INSITE_CP_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_GRANITE2INSITE_CP.txt"), 
+				new File("./src/files/GRANITE_VT_GRANITE2INSITE_CP.txt"), 
+				"EAI_GRANITE_VT_GRANITE2INSITE_CP_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList()), "CIRC_HUM_ID,PATH");
+		compareFiles.startComparison();
+		
+		// ANALYZE GRANITE2INSITE
+		System.out.println("Running EAI_GRANITE_VT_GRANITE2INSITE_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_GRANITE2INSITE.txt"), 
+				new File("./src/files/GRANITE_VT_GRANITE2INSITE.txt"), 
+				"EAI_GRANITE_VT_GRANITE2INSITE_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList("CIRC_INST_ID,CIRC_LAST_MOD_TS",
+						"A_SIDE_LAST_MOD_TS","Z_SIDE_LAST_MOD_TS")), "CIRC_HUM_ID");
+		compareFiles.startComparison();
+		
+		// ANALYZE GRANITE2INSITE_EQ
+		System.out.println("Running EAI_GRANITE_VT_GRANITE2INSITE_EQ_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_GRANITE2INSITE_EQ.txt"), 
+				new File("./src/files/GRANITE_VT_GRANITE2INSITE_EQ.txt"), 
+				"EAI_GRANITE_VT_GRANITE2INSITE_EQ_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList()), "CIRC_HUM_ID,PATH,EQUIP_ID");
+		compareFiles.startComparison();
+		
+		// ANALYZE PATH_RELATIONS
+		System.out.println("Running EAI_GRANITE_VT_TP_PATH_RELATIONS_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_TP_PATH_RELATIONS.txt"), 
+				new File("./src/files/GRANITE_VT_TP_PATH_RELATIONS.txt"), 
+				"EAI_GRANITE_VT_TP_PATH_RELATIONS_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList("CIRC_PATH_INST_ID","BNDL_PATH_INST_ID","SEQUENCE")),
+				"PHYSICAL_BUNDLE,BUNDLE_MEMBER,ELEMENT_NAME,SEGMENT_VENDOR,ELEMENT_CATEGORY,PORT_NAME");
+		compareFiles.startComparison();
+
+		// ANALYZE ATTRIBUTES_XTAB
+		System.out.println("Running EAI_GRANITE_VT_SEGMENT_ATTRIBUTES_XTAB_ANALYSIS");
+		compareFiles = new CompareRator(new File("./src/files/EAI_VT_SEGMENT_ATTRIBUTES_XTAB.txt"), 
+				new File("./src/files/GRANITE_VT_SEGMENT_ATTRIBUTES_XTAB.txt"), 
+				"EAI_GRANITE_VT_SEGMENT_ATTRIBUTES_XTAB_ANALYSIS.txt",
+				new HashSet<String>(Arrays.asList("CIRC_INST_ID","COMMENTS2","COMMENTS3")), "CIRC_NAME");
+		compareFiles.startComparison();
+		
+		
+		System.out.println("Finished analyzing all of the data!");
+	}
+}

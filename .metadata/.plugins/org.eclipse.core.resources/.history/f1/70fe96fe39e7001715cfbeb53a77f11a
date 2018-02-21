@@ -1,0 +1,308 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Set;
+
+/**
+ * This class will compare the differences and similarities between two different files 
+ * 
+ * @author MWilson164
+ * @version 1.0.0
+ *
+ */
+public class CompareRator {
+	/** Splits by tab */
+	private final String SPLIT_BY_TAB = "\\t+";
+	
+	/** Reference to the first file */
+	private File firstFile;
+	
+	/** Reference to the second file */
+	private File secondFile;
+	
+	/** My first scanner */
+	private Scanner firstScan;
+	
+	/** My second scanner */
+	private Scanner secondScan;
+	
+	/** Keeps track of the headers at the top of the files */
+	private String[] headers;
+	
+	/** Keeps track of the differences by column and row */
+	private Set<Cell> differentCells;
+	
+	/** The string builder object to be used in generating strings in a row */
+	private StringBuilder myString;
+	
+	/** Secondary string builder object */
+	private StringBuilder myString2;
+	
+	/** Maps all of the cells according to their respective columns */
+	private HashMap<String, List<Cell>> myMap;
+
+	/**
+	 * Creates a CompareRator object used for comparing two files
+	 * 
+	 * @param firstFile A file to parse through
+	 * @param secondFile A file to parse through
+	 * @throws FileNotFoundException 
+	 */
+	public CompareRator(final File firstFile, final File secondFile) throws FileNotFoundException {
+		this.firstFile = firstFile;
+		this.secondFile = secondFile;
+		this.firstScan = new Scanner(firstFile);
+		this.secondScan = new Scanner(secondFile);
+		this.differentCells = new HashSet<Cell>();
+		myString = new StringBuilder();
+		myString2 = new StringBuilder();
+		myMap = new HashMap<>();
+	}
+	
+	/**
+	 * This algorithm will traverse through the contents of the file and 
+	 * appropriately designate which fields and values are different and 
+	 * which ones are the same.
+	 * 
+	 * @throws FileNotFoundException 
+	 */
+	public void startComparison() throws FileNotFoundException {
+		final int cols = findMaxCol();
+		compareSimilarities();
+	}
+	
+	/** 
+	 * Finds the length of the file with the greatest number of columns 
+	 * and returns it.
+	 * 
+	 * @return The greatest number of columns.
+	 * @throws FileNotFoundException 
+	 */
+	private int findMaxCol() throws FileNotFoundException {
+		int firstLength; int secondLength = firstLength = 0;
+		System.out.println("Scanning the total column count of the first file...");
+		firstLength = findMaxCol(firstScan, firstLength);
+		
+		System.out.println("Scan of the first file complete!\n"
+				+ "\nScanning the total column count of the second file...");
+		
+		secondLength = findMaxCol(secondScan, secondLength);
+		
+		String resolve;
+		
+		if(firstLength < secondLength) {
+			secondScan = new Scanner(secondFile);
+			resolve = "second";
+		} else {
+			firstScan = new Scanner(firstFile);
+			resolve = "first";
+		}
+		
+		String[] temp;
+		// populates the headers
+		if(resolve.equals("first")) {
+			temp = firstScan.nextLine().split("\t");
+			headers = new String[firstLength];
+			for(int i = 0; i < temp.length; i++) {
+				headers[i] = temp[i] == null? "NONE":temp[i];
+			}
+		} else {
+			temp = secondScan.nextLine().split("\t");
+			headers = new String[secondLength];
+			for(int i = 0; i < temp.length; i++) {
+				headers[i] = temp[i] == null? "NONE":temp[i];
+			}
+		}
+		
+		System.out.println("Scan of the second file complete!\n");
+		return firstLength > secondLength ? firstLength : secondLength;
+	}
+	
+	/**
+	 * Private Helper function to find the max column.
+	 * 
+	 * @param myScan The scanner to use.
+	 * @param length The variable to manipulate.
+	 * @return The maximum column count
+	 */
+	private int findMaxCol(final Scanner myScan, int length) {
+		int tempLength;
+		while(secondScan.hasNextLine()) {
+			String s = secondScan.nextLine();
+			int i =0;
+			tempLength = 0;
+			while(i < s.length()) {
+				if(Integer.toHexString((int)s.charAt(i)).equals("9")) {
+					int k = 0;
+					while(i < s.length() && Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++; k++;
+					}
+					tempLength += k/2;
+					i++;
+				}
+				else {
+					while(i < s.length() && !Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++;
+					}
+					tempLength++;
+					i++;
+				}
+			}
+			length = length < tempLength ? tempLength: length;
+		}
+		return length;
+	}
+	
+	/**
+	 * Function that populates the similarities matrix.
+	 * @throws FileNotFoundException 
+	 */
+	public void compareSimilarities() throws FileNotFoundException {
+		firstScan = new Scanner(firstFile);
+		secondScan = new Scanner(secondFile);
+		int row = 0; int col = 0;
+		while(firstScan.hasNextLine() && secondScan.hasNextLine()) {
+			String s = firstScan.nextLine();
+			String s2 = secondScan.nextLine();
+			int i = 0; int j = 0;
+			col= 0;
+			while(i < s.length() && j < s2.length()) {
+				myString = new StringBuilder();
+				myString2 = new StringBuilder();
+				if(Integer.toHexString((int)s.charAt(i)).equals("9")) {
+					int k = 0;
+					if(i < s.length() && Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++; 
+					}
+					myString.append("    ");
+				} else {
+					while(i < s.length() && !Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						myString.append(s.charAt(i)); i++;
+					}
+					i++;
+				}
+				if(Integer.toHexString((int)s2.charAt(j)).equals("9")) {
+					if(j < s2.length() && Integer.toHexString((int)s2.charAt(j)).equals("9")) {
+						j++;
+					}
+					myString2.append("    ");
+				} else {
+					while(j < s2.length() && !Integer.toHexString((int)s2.charAt(j)).equals("9")) {
+						myString2.append(s2.charAt(j)); j++;
+					}
+					j++;
+				}
+				if(!myString.toString().equals(myString2.toString())) {
+//					System.out.println("Adding " + myString.toString() + " and " + myString2.toString()
+//					+ " to " + headers[col]);
+					differentCells.add(new Cell(headers[col], myString.toString(), myString2.toString(), row));
+				}
+ 				col++;
+			}
+			//row++; 
+			//System.out.println("Finished processing row: " + row);
+			++row;if (row == 50)break;
+		}
+		System.out.println("There are a total of " + differentCells.size() + " differences!"
+		+ "\nNow mapping the differences!");
+		for(Cell c : differentCells) {
+			if (myMap.get(c.getName()) == null) 
+				myMap.put(c.getName(), new LinkedList<Cell>());
+			myMap.get(c.getName()).add(c);
+		}
+		System.out.println("\nNow printing the differences");
+		for(String s: myMap.keySet()) {
+			List<Cell> c = myMap.get(s);
+			c.sort(null);
+			System.out.println("\nLOOKING AT THE COLUMN " + s + "\n");
+			for(Cell cell: c) {
+				System.out.println(cell.toString());
+			}
+			System.out.println();
+		}
+	}
+	
+    
+	
+	/** Cell class that contains data on a difference location */
+	private class Cell implements Comparable {
+		private String columnName;
+		private int row;
+		private String firstData;
+		private String secondData;
+		
+		public Cell(final String column, final String first, final String second, final int row) {
+			this.columnName = column;
+			this.firstData = first;
+			this.secondData = second;
+			this.row = row;
+		}
+		
+		/**
+		 * Gets the column name of this cell.
+		 * 
+		 * @return the column name to this cell.
+		 */
+		public String getName() {
+			return columnName;
+		}
+		
+		/**
+		 * Gets the firstData element of this cell.
+		 * 
+		 * @return this cell's first bit of data.
+		 */
+		public String getFirstData() {
+			return firstData;
+		}
+		
+		/**
+		 * Gets the secondData element of this cell.
+		 * 
+		 * @return this cell's second bit of data.
+		 */
+		public String getSecondData() {
+			return secondData;
+		}
+		
+		/** 
+		 * Gets the row where this cell was created.
+		 * 
+		 * @return the row of this cell.
+		 */
+		public int getRow() {
+			return row;
+		}
+		
+		/**
+		 * Overridden toString method for the cell class
+		 *
+		 * @return the String representation of this object
+		 */
+		@Override
+		public String toString() {
+			return "{Row: " + this.row + " Column: " + this.columnName +
+					" Data from first file: " + this.firstData + 
+					" Data from second file: " + this.secondData + 
+					"}";
+		}
+
+		/** 
+		 * Determines how to sort the cells.
+		 * 
+		 * @param o
+		 * @return 1 for this cell being greater than cell o, -1 for being less than cell o, and o if they are equal
+		 */
+		@Override
+		public int compareTo(Object o) {
+			Cell tempCell = (Cell) o;
+			return this.row > tempCell.getRow() ? 1 : (this.row < tempCell.getRow() ? -1  : 0);
+		}
+		
+	}
+}
+

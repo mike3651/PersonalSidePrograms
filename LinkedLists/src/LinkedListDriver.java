@@ -1,0 +1,161 @@
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Random;
+
+/**
+ * The purpose of this class is to tackle various linked list problems
+ * 
+ * @author MWilson164
+ * @version 1.0.0
+ */
+public class LinkedListDriver {
+	/** Keeps track of the maximum size of the list. */
+	private static final int MAX_CAPACITY = 20;
+	
+	public static void main(final String[] args) {
+		LinkedList<Integer> a = makeRandomList();
+		LinkedList<Integer> b = makeRandomList();
+		oneInAnother(a, b);
+		a.clear(); a.add(1);a.add(3); a.add(6); a.add(6); a.add(6); a.add(6);
+		b.clear(); b.add(2); b.add(4); b.add(5);
+		printList(a);
+		printList(b);
+		mergeListsInTightSpace(a, b);
+	}
+	
+	/**
+	 * This problem deals with the case in which we try to see if one linkedlist 
+	 * exists inside of another one.
+	 * 
+	 * @param a The first list.
+	 * @param b The second list.
+	 */
+	private static void oneInAnother(LinkedList<Integer> a, LinkedList<Integer> b) {
+		printList(a); printList(b);
+		System.out.println("Checking one inside another via hashMap");
+		System.out.println("List a is in list b? " + mapOneInAnother(a, b));
+		System.out.println("Checking one inside another w/out any extra space");
+		System.out.println("List a is in list b? " + linkOneInAnother(a, b));
+	}
+	
+	/**
+	 * This algorithm will merge two linked lists together (removing duplicates) without
+	 * using an extra space. Both of the lists are in sorted order.
+	 * 
+	 * Actual RT: O(n^2 + m^2)
+	 * With proper implementation of pointers RT : O(n + m), SC: O(1)
+	 * 
+	 * @param first The first list to iterate through.
+	 * @param second The second list to iterate through.
+	 */
+	private static void mergeListsInTightSpace(LinkedList<Integer> first, LinkedList<Integer> second) {
+		int i = 0; int j = 0;
+		// choice: move the second array into the first array
+		while(i < first.size() && j < second.size()) {
+			int firstValue = first.get(i);
+			int secondValue = second.get(j);
+			if(i < first.size() - 1 && firstValue == first.get(i + 1)) {
+				first.remove(i + 1);
+			}
+			if(firstValue < secondValue) {
+				i++;
+			} else {
+				first.add(i, secondValue);
+				j++;
+			}
+		}
+		for(; j < second.size(); j++) {
+			first.add(second.get(j));
+		}
+		printList(first);
+	}
+	
+	/**
+	 * This is a helper method that checks to see if the contents of one
+	 * list exist within another.
+	 * 
+	 * RT : O(n ^2), SC : O(1)
+	 * 
+	 * @param first The first list to look through.
+	 * @param second The second list to look through.
+	 * @return True if one list exists within another, else false.
+	 */
+	private static boolean linkOneInAnother(LinkedList<Integer> first, LinkedList<Integer> second) {
+		if(first.size() > second.size()) {
+			for(int i = 0; i < second.size(); i++) 
+				if(!first.contains(second.get(i)))
+					return false;
+		} else {
+			for(int i = 0; i < first.size(); i++)
+				if(!second.contains(first.get(i)))
+					return false;
+		}	
+		return true;
+	}
+	
+	
+	/**
+	 * This is a helper method that checks to see if the contents of one 
+	 * list exist within another using a hashmap.
+	 * 
+	 * RT : O(n^2), SC : O(n)
+	 * 
+	 * @param first The first list to look through.
+	 * @param second The second list to look through.
+	 * @return True if one list exists within another, else false.
+	 */
+	private static boolean mapOneInAnother(LinkedList<Integer> first, LinkedList<Integer> second) {
+		HashMap<Integer, Boolean> mapCheck = new HashMap<Integer, Boolean>();
+		if(first.size() > second.size()) {
+			for(int i = 0; i < first.size(); i++) {
+				mapCheck.put(first.get(i), true);
+			}
+			
+			// loop through the smaller list to see if all elements 
+			// can be found in the larger list
+			for(int i = 0; i < second.size(); i++) 
+				if(mapCheck.get(second.get(i)) == null || !mapCheck.get(second.get(i))) 
+					return false;
+			
+		} else {
+			for(int i = 0; i < second.size(); i++) {
+				mapCheck.put(second.get(i), true);
+			}
+			
+			// loop through the smaller list to see if all elements 
+			// can be found in the larger list
+			for(int i = 0; i < first.size(); i++)
+				if(mapCheck.get(first.get(i)) == null || !mapCheck.get(first.get(i)))
+					return false;
+		}
+		return true;
+	}
+
+	
+	/**
+	 * Private helper method that will generate a random list and return it
+	 */
+	private static LinkedList<Integer> makeRandomList() {
+		Random rand = new Random();
+		LinkedList<Integer> returnList = new LinkedList<Integer>();
+		for(int i = 0; i < MAX_CAPACITY; i++) {
+			returnList.add(rand.nextInt(MAX_CAPACITY));
+		}
+		return returnList;
+	}
+	
+	/**
+	 * Private method that prints the contents of a list.
+	 * 
+	 * @param list The list to print out.
+	 */
+	private static void printList(LinkedList<Integer> list) {
+		if(list.size() > 0) {
+			System.out.print(list.get(0));
+			for(int i = 1; i < list.size(); i++) {
+				System.out.print(" --> " + list.get(i));
+			}
+		}
+		System.out.println();
+	}
+}

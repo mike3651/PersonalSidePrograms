@@ -1,0 +1,296 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
+
+/**
+ * This class will compare the differences and similarities between two different files 
+ * 
+ * @author MWilson164
+ * @version 1.0.0
+ *
+ */
+public class CompareRator {
+	/** Splits by tab */
+	private final String SPLIT_BY_TAB = "\\t+";
+	
+	/** Reference to the first file */
+	private File firstFile;
+	
+	/** Reference to the second file */
+	private File secondFile;
+	
+	/** My first scanner */
+	private Scanner firstScan;
+	
+	/** My second scanner */
+	private Scanner secondScan;
+	
+	/** Keeps track of the similar data elements */
+	private String[][] similar;
+	
+	/** Keeps track of the different data elements */
+	private String[][] firstFileMatrix;
+	
+	/** Keeps track of the contents of the current matrix */
+	private String[][] secondFileMatrix;
+	
+	/** Keeps track of the differences by column and row */
+	private Set<Cell> differentCells;
+	
+	/** The string builder object to be used in generating strings in a row */
+	private StringBuilder myString;
+
+	/**
+	 * Creates a CompareRator object used for comparing two files
+	 * 
+	 * @param firstFile A file to parse through
+	 * @param secondFile A file to parse through
+	 * @throws FileNotFoundException 
+	 */
+	public CompareRator(final File firstFile, final File secondFile) throws FileNotFoundException {
+		this.firstFile = firstFile;
+		this.secondFile = secondFile;
+		this.firstScan = new Scanner(firstFile);
+		this.secondScan = new Scanner(secondFile);
+		this.differentCells = new HashSet<Cell>();
+		myString = new StringBuilder();
+	}
+	
+	/**
+	 * This algorithm will traverse through the contents of the file and 
+	 * appropriately designate which fields and values are different and 
+	 * which ones are the same.
+	 * 
+	 * @throws FileNotFoundException 
+	 */
+	public void startComparison() throws FileNotFoundException {
+		final int cols = findMaxCol();
+		resetScanners();
+		final int rows = findMaxRow();
+		System.out.println("rows: " + rows + "\ncols: " + cols);
+		similar = firstFileMatrix = new String[rows][cols];
+		secondFileMatrix = new String[rows][cols];
+		resetScanners();
+		
+		System.out.println("Generating " + rows + " x " + cols + " sized matrices");
+		System.out.println("\nNow scanning for similarites...");
+		compareSimilarities();
+		resetScanners();
+		
+		System.out.println("\nNow scanning for differences...");
+		compareDifferences();
+		System.out.println("There will be a total of " + (rows * cols) 
+				+ " elements to scan through!");
+	}
+	
+	/** 
+	 * Finds the length of the file with the greatest number of columns 
+	 * and returns it.
+	 * 
+	 * @return The greatest number of columns.
+	 */
+	private int findMaxCol() {
+		int firstLength; int secondLength = firstLength = 0;
+		System.out.println("Scanning the total column count of the first file...");
+		firstLength = findMaxCol(firstScan, firstLength);
+		
+		System.out.println("Scan of the first file complete!\n"
+				+ "\nScanning the total column count of the second file...");
+		
+		secondLength = findMaxCol(secondScan, secondLength);
+		 
+		System.out.println("Scan of the second file complete!\n");
+		return firstLength > secondLength ? firstLength : secondLength;
+	}
+	
+	/**
+	 * Private Helper function to find the max column.
+	 * 
+	 * @param myScan The scanner to use.
+	 * @param length The variable to manipulate.
+	 * @return The maximum column count
+	 */
+	private int findMaxCol(final Scanner myScan, int length) {
+		int tempLength;
+		while(secondScan.hasNextLine()) {
+			String s = secondScan.nextLine();
+			int i =0;
+			tempLength = 0;
+			while(i < s.length()) {
+				if(Integer.toHexString((int)s.charAt(i)).equals("9")) {
+					int k = 0;
+					while(i < s.length() && Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++; k++;
+					}
+					tempLength += k/2;
+					i++;
+				}
+				else {
+					while(i < s.length() && !Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++;
+					}
+					tempLength++;
+					i++;
+				}
+			}
+			length = length < tempLength ? tempLength: length;
+		}
+		return length;
+	}
+	
+	/** 
+	 * Finds the length of the file with the greatest number of rows 
+	 * and returns it.
+	 * 
+	 * @return The greatest number of rows.
+	 */
+	private int findMaxRow() {
+		int firstLength = 0; int secondLength = 0;
+		System.out.println("Scanning the total row count of the first file...");
+		while(firstScan.hasNextLine()) {
+			firstLength++;
+			firstScan.nextLine();
+		}
+		System.out.println("Scan of the first file complete!\n"
+				+ "\nScanning the total row count of the second file...");
+		while(secondScan.hasNextLine()) {
+			secondLength++;
+			secondScan.nextLine();
+		}
+		System.out.println("Scan of the second file complete!\n");
+		return firstLength > secondLength ? firstLength : secondLength;
+	}
+	
+	/** 
+	 * Function that resets the scanners.
+	 * 
+	 * @throws FileNotFoundException 
+	 */
+	private void resetScanners() throws FileNotFoundException {
+		firstScan = new Scanner(firstFile);
+		secondScan = new Scanner(secondFile);
+	}
+	
+	/**
+	 * Function that populates the similarities matrix.
+	 */
+	public void compareSimilarities() {
+		// populate the table with first files information
+		System.out.println("Populating the matrix from the file: " + firstFile.getAbsolutePath());
+		firstFileMatrix = populateMatrices(this.firstScan, this.firstFileMatrix);
+		
+		System.out.println("Scan of the first file complete!\n"
+				+ "\nPopulating the second matrix from the file: " + secondFile.getAbsolutePath());
+		secondFileMatrix = populateMatrices(this.secondScan, this.secondFileMatrix);
+		
+		for(int i = 0; i < firstFileMatrix.length; i++) {
+			for(int j = 0; j < secondFileMatrix[0].length; j++) {
+				if(firstFileMatrix[i][j] == null) {
+					firstFileMatrix[i][j] = " ";
+				}
+				if(secondFileMatrix[i][j] == null) {
+					secondFileMatrix[i][j] = " ";
+				}
+				if(!firstFileMatrix[i][j].equals(secondFileMatrix[i][j])) {
+					differentCells.add(new Cell(firstFileMatrix[0][j], firstFileMatrix[i][j],
+							secondFileMatrix[i][j]));
+					System.out.println("difference");
+				}
+			}
+		}
+		System.out.println("The number of differences is: " + differentCells.size());
+		System.out.println("Finished finding the similarities, now printing...\n\n");
+	}
+	
+	/**
+	 * Private helper function to populate the matrices.
+	 * 
+	 * @param myScan The scanner to be used.
+	 * @param m The matrix that we are populating.
+	 * @return The newly modified matrix
+	 */
+	private String[][] populateMatrices(final Scanner myScan, String[][]m) {
+		int row = 0; int col = 0;
+		while(myScan.hasNextLine()) {
+			String s = myScan.nextLine();
+			int i =0;
+			col= 0;
+			while(i < s.length()) {
+				myString = new StringBuilder();
+				if(Integer.toHexString((int)s.charAt(i)).equals("9")) {
+					int k = 0;
+					while(i < s.length() && Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						i++; k++;
+					}
+					for(int l = 0; l < k/2; l++) {
+						m[row][col] = " ";
+						col++;
+					}
+				}
+				else {
+					while(i < s.length() && !Integer.toHexString((int)s.charAt(i)).equals("9")) {
+						myString.append(s.charAt(i)); i++;
+					}
+					m[row][col] = myString.toString();
+					col++;
+					System.out.println("Adding: " + m[row][col]);
+				}
+			}
+			row++;
+		}
+		return m;
+	}
+	
+	
+	/**
+	 * Function that populates the differences matrix. 
+	 * For each data element that is different between the two file matrices 
+	 * generate a new cell with information on that
+	 */
+	private void compareDifferences() {
+		// loop through the similar, for anything that isn't in both matrices 
+//		for(int i = 0; i < similar.length; i++) {
+//			for(int j = 0; j < similar[i].length; j++) {
+//				if(similar[i][j] != null) {
+//					// there is a difference here
+//					//System.out.println("current value:" + similar[i][j]);
+//					if(similar[i][j].equals("-")) {
+//						differentCells.add(new Cell(firstFileMatrix[0][j], firstFileMatrix[i][j], secondFileMatrix[i][j]));
+//					}
+//				} else {
+//					//System.out.println("The data is null");
+//				}
+//			}
+//		}
+		System.out.println("The number of differences that were found is: " + differentCells.size());
+	}
+	
+	/**
+	 * Prints out the contents of the given matrix.
+	 * 
+	 * @param matrix The matrix to print
+	 */
+	private void printMatrix(final String[][] matrix) {
+		for(int i = 0; i < matrix.length; i++) {
+			for(int j = 0; j < matrix[i].length; j++) {
+				System.out.print(matrix[i][j] + " ");
+			}
+			System.out.println();
+		}
+	}
+	
+	/** Cell class that contains data on a difference location */
+	private class Cell {
+		String columnName;
+		String firstData;
+		String secondData;
+		
+		public Cell(final String column, final String first, final String second) {
+			this.columnName = column;
+			this.firstData = first;
+			this.secondData = second;
+		}
+	}
+}
